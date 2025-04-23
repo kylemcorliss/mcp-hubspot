@@ -494,4 +494,23 @@ class HubSpotClient:
             return {"error": str(e), "results": [], "pagination": {"next": {"after": None}}}
         except Exception as e:
             logger.error(f"Exception: {str(e)}")
-            return {"error": str(e), "results": [], "pagination": {"next": {"after": None}}} 
+            return {"error": str(e), "results": [], "pagination": {"next": {"after": None}}}
+
+
+def get_all_deals(properties=None, limit=100):
+    if properties is None:
+        properties = ["hs_lastcontacteddate", "dealstage", "hubspot_owner_id"]
+    deals, after = [], None
+    while True:
+        props = ",".join(properties)
+        url = f"{BASE_URL}/crm/v3/objects/deals?limit={limit}&properties={props}"
+        if after:
+            url += f"&after={after}"
+        r = httpx.get(url, headers=HEADERS)
+        r.raise_for_status()
+        data = r.json()
+        deals += data.get("results", [])
+        after = data.get("paging", {}).get("next", {}).get("after")
+        if not after:
+            break
+    return deals
